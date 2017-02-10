@@ -800,7 +800,7 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 
 	NSMutableString *queryString;
 	NSString *queryStringBeforeLimit = nil;
-	NSString *filterString;
+	NSString *filterString ;
 	SPMySQLStreamingResultStore *resultStore;
 	NSInteger rowsToLoad = [[tableDataInstance statusValueForKey:@"Rows"] integerValue];
 
@@ -826,6 +826,7 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 		[queryString appendFormat:@" WHERE %@", filterString];
 		isFiltered = YES;
 	} else {
+		[queryString appendFormat:@" WHERE %@", @"1"];
 		isFiltered = NO;
 	}
 
@@ -3204,7 +3205,7 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 	if (([prefs boolForKey:SPLoadBlobsAsNeeded]) && [dataColumns count]) {
 
 		NSMutableArray *fields = [NSMutableArray arrayWithCapacity:[dataColumns count]];
-		BOOL tableHasBlobs = NO;
+//		BOOL tableHasBlobs = NO;
 		NSString *fieldName;
 
 		for (NSDictionary* field in dataColumns)
@@ -3213,10 +3214,11 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 			else {
 				// For blob/text fields, select a null placeholder so the column count is still correct
 				[fields addObject:@"NULL"];
-				tableHasBlobs = YES;
+//				tableHasBlobs = YES;
 			}
 
-		return (tableHasBlobs) ? [fields componentsJoinedByString:@", "] : @"*";
+//		return (tableHasBlobs) ? [fields componentsJoinedByString:@", "] : @"*";
+		return [fields componentsJoinedByString:@", "];
 
 	}
 #endif
