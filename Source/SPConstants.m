@@ -97,6 +97,7 @@ NSString *SPReloadAfterAddingRow                 = @"ReloadAfterAddingRow";
 NSString *SPReloadAfterEditingRow                = @"ReloadAfterEditingRow";
 NSString *SPReloadAfterRemovingRow               = @"ReloadAfterRemovingRow";
 NSString *SPLoadBlobsAsNeeded                    = @"LoadBlobsAsNeeded";
+NSString *SPFilterColumnsAsNeeded                = @"FilterColumnsAsNeeded";
 NSString *SPTableRowCountQueryLevel              = @"TableRowCountQueryLevel";
 NSString *SPTableRowCountCheapSizeBoundary       = @"TableRowCountCheapLookupSizeBoundary";
 NSString *SPNewFieldsAllowNulls                  = @"NewFieldsAllowNulls";

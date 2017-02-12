@@ -826,7 +826,7 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 		[queryString appendFormat:@" WHERE %@", filterString];
 		isFiltered = YES;
 	} else {
-		[queryString appendFormat:@" WHERE %@", @"1"];
+		[queryString appendFormat:@" WHERE %@", @"1=1"];
 		isFiltered = NO;
 	}
 
@@ -1906,7 +1906,7 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 		}
 		
 		// If we have indexes, use argumentForRow
-		queryResult = [mySQLConnection queryString:[NSString stringWithFormat:@"SELECT * FROM %@ WHERE %@", [selectedTable backtickQuotedString], whereArgument]];
+		queryResult = [mySQLConnection queryString:[NSString stringWithFormat:@"SELECT %@ FROM %@ WHERE %@", [self fieldListForQuery], [selectedTable backtickQuotedString], whereArgument]];
 		dbDataRow = [queryResult getRowAsArray];
 	}
 #endif
@@ -2122,14 +2122,14 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 				NSInteger numberOfRows = 0;
 
 				// Get the number of rows in the table
-				NSString *returnedCount = [mySQLConnection getFirstFieldFromQuery:[NSString stringWithFormat:@"SELECT COUNT(1) FROM %@", [selectedTable backtickQuotedString]]];
+				NSString *returnedCount = [mySQLConnection getFirstFieldFromQuery:[NSString stringWithFormat:@"SELECT COUNT(1) FROM %@ WHERE 1=1", [selectedTable backtickQuotedString]]];
 				if (returnedCount) {
 					numberOfRows = [returnedCount integerValue];
 				}
 
 				// Check for uniqueness via LIMIT numberOfRows-1,numberOfRows for speed
 				if(numberOfRows > 0) {
-					[mySQLConnection queryString:[NSString stringWithFormat:@"SELECT * FROM %@ GROUP BY %@ LIMIT %ld,%ld", [selectedTable backtickQuotedString], [primaryKeyFieldNames componentsJoinedAndBacktickQuoted], (long)(numberOfRows-1), (long)numberOfRows]];
+					[mySQLConnection queryString:[NSString stringWithFormat:@"SELECT %@ FROM %@ GROUP BY %@ LIMIT %ld,%ld", [self fieldListForQuery], [selectedTable backtickQuotedString], [primaryKeyFieldNames componentsJoinedAndBacktickQuoted], (long)(numberOfRows-1), (long)numberOfRows]];
 					if ([mySQLConnection rowsAffectedByLastQuery] == 0)
 						primaryKeyFieldNames = nil;
 				} else {
@@ -3202,28 +3202,63 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 - (NSString *)fieldListForQuery
 {
 #ifndef SP_CODA
+	NSMutableArray *fields = [NSMutableArray arrayWithCapacity:[dataColumns count]];
+	NSSet *filteredFields = [self filteredFieldSet];
+	NSString *fieldName;
+	NSMutableSet *columnFilters = [NSMutableSet set];
+	
+	for (NSDictionary* field in dataColumns)
+	{
+		[fields addObject:[[field objectForKey:@"name"] backtickQuotedString]];
+	}
+	if([filteredFields count])
+	{
+		for (NSDictionary* field in dataColumns)
+			if ([filteredFields containsObject:[field objectForKey:@"name"]])
+				[columnFilters addObject:[[field objectForKey:@"name"] backtickQuotedString]];
+	}
 	if (([prefs boolForKey:SPLoadBlobsAsNeeded]) && [dataColumns count]) {
 
-		NSMutableArray *fields = [NSMutableArray arrayWithCapacity:[dataColumns count]];
-//		BOOL tableHasBlobs = NO;
-		NSString *fieldName;
-
+		//NSMutableArray *fields = [NSMutableArray arrayWithCapacity:[dataColumns count]];
+		BOOL tableHasBlobs = NO;
+		//NSString *fieldName;
+		
 		for (NSDictionary* field in dataColumns)
-			if (![tableDataInstance columnIsBlobOrText:fieldName = [field objectForKey:@"name"]] )
-				[fields addObject:[fieldName backtickQuotedString]];
-			else {
+			if ([tableDataInstance columnIsBlobOrText:fieldName = [field objectForKey:@"name"]])
+			{
+				//[fields addObject:[fieldName backtickQuotedString]];
+				[columnFilters addObject:[fieldName backtickQuotedString]];
+				tableHasBlobs = YES;
+			}
+			/*else {
 				// For blob/text fields, select a null placeholder so the column count is still correct
 				[fields addObject:@"NULL"];
-//				tableHasBlobs = YES;
-			}
+				tableHasBlobs = YES;
+			}*/
 
 //		return (tableHasBlobs) ? [fields componentsJoinedByString:@", "] : @"*";
-		return [fields componentsJoinedByString:@", "];
-
 	}
+	for (NSUInteger i = 0; i < [fields count] ; i++) {
+		if([columnFilters containsObject:fields[i] ])
+		{
+			fields[i] = [NSMutableString stringWithFormat:@"NULL"];
+		}
+	}
+	return [fields componentsJoinedByString:@", "];
 #endif
 		return @"*";
 
+}
+
+/**
+ * Returns a set of filtered columns from the table preferences window
+ * The String is assumed to be a comma separeted value.
+ */
+- (NSSet *)filteredFieldSet
+{
+	NSString *columnFilterPref = [prefs stringForKey:(NSString *)SPFilterColumnsAsNeeded];
+	NSArray<NSString *> *columnFilterPrefArray = [columnFilterPref componentsSeparatedByString:@","];
+	return [NSSet setWithArray:columnFilterPrefArray];;
 }
 
 /**
@@ -3262,7 +3297,7 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 	[tableDocumentInstance startTaskWithDescription:NSLocalizedString(@"Checking field data for editing...", @"checking field data for editing task description")];
 
 	// Actual check whether field can be identified bijectively
-	SPMySQLResult *tempResult = [mySQLConnection queryString:[NSString stringWithFormat:@"SELECT COUNT(1) FROM %@.%@ %@",
+	SPMySQLResult *tempResult = [mySQLConnection queryString:[NSString stringWithFormat:@"SELECT COUNT(1) FROM %@.%@ %@ WHERE 1=1",
 		[[columnDefinition objectForKey:@"db"] backtickQuotedString],
 		[tableForColumn backtickQuotedString],
 		fieldIDQueryStr]];
@@ -3282,7 +3317,7 @@ static NSString *SPTableFilterSetDefaultOperator = @"SPTableFilterSetDefaultOper
 			return @[@(-1), @""];
 		}
 
-		tempResult = [mySQLConnection queryString:[NSString stringWithFormat:@"SELECT COUNT(1) FROM %@.%@ %@",
+		tempResult = [mySQLConnection queryString:[NSString stringWithFormat:@"SELECT COUNT(1) FROM %@.%@ %@ WHERE 1=1",
 			[[columnDefinition objectForKey:@"db"] backtickQuotedString],
 			[tableForColumn backtickQuotedString],
 			fieldIDQueryStr]];

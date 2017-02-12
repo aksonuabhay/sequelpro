@@ -310,6 +310,7 @@ extern NSString *SPReloadAfterAddingRow;
 extern NSString *SPReloadAfterEditingRow;
 extern NSString *SPReloadAfterRemovingRow;
 extern NSString *SPLoadBlobsAsNeeded;
+extern NSString *SPFilterColumnsAsNeeded;
 extern NSString *SPTableRowCountQueryLevel;
 extern NSString *SPTableRowCountCheapSizeBoundary;
 extern NSString *SPNewFieldsAllowNulls;
