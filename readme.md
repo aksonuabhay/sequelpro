@@ -17,6 +17,10 @@ Build Instructions
  * Click the `Run` button in the toolbar
  * If the above doesn't work, please file a [bug report](https://github.com/sequelpro/sequelpro/issues/new)
 
+Usage
+==================
+https://stackoverflow.com/a/50615629/2987755
+
 License
 =======
 
